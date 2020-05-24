@@ -124,8 +124,8 @@ public class MainActivity extends AppCompatActivity {
             initViews();
             viewToConnectingState();
 
-            OPENVIDU_URL = String.valueOf(R.string.default_openvidu_url);
-            OPENVIDU_SECRET = String.valueOf(R.string.default_openvidu_secret);
+            OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
+            OPENVIDU_SECRET = "qwerty@321";
             httpClient = new CustomHttpClient(OPENVIDU_URL, "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET).getBytes(), android.util.Base64.DEFAULT).trim());
 
             String sessionId = session_name.getText().toString();

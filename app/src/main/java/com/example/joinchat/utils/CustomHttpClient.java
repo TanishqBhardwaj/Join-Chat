@@ -1,5 +1,7 @@
 package com.example.joinchat.utils;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
@@ -80,6 +82,7 @@ public class CustomHttpClient {
 
     public void httpCall(String url, String method, String contentType, RequestBody body, Callback callback) throws IOException {
         url = url.startsWith("/") ? url.substring(1) : url;
+        Log.d("THI IS THE URL : ", this.baseUrl + url);
         Request request = new Request.Builder()
                 .url(this.baseUrl + url)
                 .header("Authorization", this.basicAuth).header("Content-Type", contentType).method(method, body)
