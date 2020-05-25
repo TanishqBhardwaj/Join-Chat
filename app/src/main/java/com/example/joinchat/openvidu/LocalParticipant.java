@@ -54,7 +54,7 @@ public class LocalParticipant extends Participant {
         VideoCapturer videoCapturer = createCameraCapturer();
         VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
         videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
-        videoCapturer.startCapture(480, 640, 20);
+        videoCapturer.startCapture(480, 640, 40);
 
         // create VideoTrack
         this.videoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);

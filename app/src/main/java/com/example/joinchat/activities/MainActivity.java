@@ -69,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
 //    EditText openvidu_secret;
     @BindView(R.id.local_gl_surface_view)
     SurfaceViewRenderer localVideoView;
-    @BindView(R.id.main_participant)
-    TextView main_participant;
+//    @BindView(R.id.main_participant)
+//    TextView main_participant;
     @BindView(R.id.peer_container)
     FrameLayout peer_container;
 
@@ -201,8 +201,8 @@ public class MainActivity extends AppCompatActivity {
         localParticipant.startCamera();
         runOnUiThread(() -> {
             // Update local participant view
-            main_participant.setText(participant_name.getText().toString());
-            main_participant.setPadding(20, 3, 20, 3);
+//            main_participant.setText(participant_name.getText().toString());
+//            main_participant.setPadding(20, 3, 20, 3);
         });
 
         // Initialize and connect the websocket to OpenVidu Server
@@ -242,8 +242,8 @@ public class MainActivity extends AppCompatActivity {
             session_name.setFocusableInTouchMode(true);
             participant_name.setEnabled(true);
             participant_name.setFocusableInTouchMode(true);
-            main_participant.setText(null);
-            main_participant.setPadding(0, 0, 0, 0);
+//            main_participant.setText(null);
+//            main_participant.setPadding(0, 0, 0, 0);
         });
     }
 
