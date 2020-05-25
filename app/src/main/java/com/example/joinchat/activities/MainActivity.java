@@ -51,6 +51,9 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
+
+    public static final String SESSION_ID = "SessionA";
+    public static final String PARTICIPANT_NAME = "participant99";
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
@@ -59,23 +62,19 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout views_container;
     @BindView(R.id.start_finish_call)
     Button start_finish_call;
-    @BindView(R.id.session_name)
-    EditText session_name;
-    @BindView(R.id.participant_name)
-    EditText participant_name;
-//    @BindView(R.id.openvidu_url)
-//    EditText openvidu_url;
-//    @BindView(R.id.openvidu_secret)
-//    EditText openvidu_secret;
+//    @BindView(R.id.session_name)
+//    EditText session_name;
+//    @BindView(R.id.participant_name)
+//    EditText participant_name;
     @BindView(R.id.local_gl_surface_view)
     SurfaceViewRenderer localVideoView;
 //    @BindView(R.id.main_participant)
-//    TextView main_participant;
+////    TextView main_participant;
     @BindView(R.id.peer_container)
     FrameLayout peer_container;
 
-    private String OPENVIDU_URL;
-    private String OPENVIDU_SECRET;
+    private String OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
+    private String OPENVIDU_SECRET = "qwerty@321";
     private Session session;
     private CustomHttpClient httpClient;
 
@@ -88,9 +87,9 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
         ButterKnife.bind(this);
-        Random random = new Random();
-        int randomIndex = random.nextInt(100);
-        participant_name.setText(participant_name.getText().append(String.valueOf(randomIndex)));
+//        Random random = new Random();
+//        int randomIndex = random.nextInt(100);
+//        participant_name.setText(participant_name.getText().append(String.valueOf(randomIndex)));
     }
 
     public void askForPermissions() {
@@ -124,12 +123,12 @@ public class MainActivity extends AppCompatActivity {
             initViews();
             viewToConnectingState();
 
-            OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
-            OPENVIDU_SECRET = "qwerty@321";
+//            OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
+//            OPENVIDU_SECRET = "qwerty@321";
             httpClient = new CustomHttpClient(OPENVIDU_URL, "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET).getBytes(), android.util.Base64.DEFAULT).trim());
 
-            String sessionId = session_name.getText().toString();
-            getToken(sessionId);
+//            String sessionId = session_name.getText().toString();
+            getToken(SESSION_ID);
         } else {
             DialogFragment permissionsFragment = new PermissionsDialogFragment();
             permissionsFragment.show(getSupportFragmentManager(), "Permissions Fragment");
@@ -196,8 +195,8 @@ public class MainActivity extends AppCompatActivity {
         session = new Session(sessionId, token, views_container, this);
 
         // Initialize our local participant and start local camera
-        String participantName = participant_name.getText().toString();
-        LocalParticipant localParticipant = new LocalParticipant(participantName, session, this.getApplicationContext(), localVideoView);
+//        String participantName = participant_name.getText().toString();
+        LocalParticipant localParticipant = new LocalParticipant(PARTICIPANT_NAME, session, this.getApplicationContext(), localVideoView);
         localParticipant.startCamera();
         runOnUiThread(() -> {
             // Update local participant view
@@ -238,10 +237,10 @@ public class MainActivity extends AppCompatActivity {
             localVideoView.release();
             start_finish_call.setText(getResources().getString(R.string.start_button));
             start_finish_call.setEnabled(true);
-            session_name.setEnabled(true);
-            session_name.setFocusableInTouchMode(true);
-            participant_name.setEnabled(true);
-            participant_name.setFocusableInTouchMode(true);
+//            session_name.setEnabled(true);
+//            session_name.setFocusableInTouchMode(true);
+//            participant_name.setEnabled(true);
+//            participant_name.setFocusableInTouchMode(true);
 //            main_participant.setText(null);
 //            main_participant.setPadding(0, 0, 0, 0);
         });
@@ -250,10 +249,10 @@ public class MainActivity extends AppCompatActivity {
     public void viewToConnectingState() {
         runOnUiThread(() -> {
             start_finish_call.setEnabled(false);
-            session_name.setEnabled(false);
-            session_name.setFocusable(false);
-            participant_name.setEnabled(false);
-            participant_name.setFocusable(false);
+//            session_name.setEnabled(false);
+//            session_name.setFocusable(false);
+//            participant_name.setEnabled(false);
+//            participant_name.setFocusable(false);
         });
     }
 

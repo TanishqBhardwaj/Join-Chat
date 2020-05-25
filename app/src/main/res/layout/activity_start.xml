@@ -4,71 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activities.StartActivity">
+    >
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="32dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginRight="32dp"
-        android:fontFamily="@font/montserrat"
-        android:text="Freedom to work from Anywhere"
-        android:textColor="#000"
-        android:textSize="36sp"
-        android:textStyle="bold"
+    <FrameLayout
+        android:id="@+id/fragment_container_start_activity"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:fontFamily="@font/montserrat"
-        android:text="Enjoy the freedom to work and collaborate with hassle free video conferencing"
-        android:textColor="#000"
-        android:textSize="24sp"
-        app:layout_constraintEnd_toEndOf="@+id/textView"
-        app:layout_constraintStart_toStartOf="@+id/textView"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
-
-    <Button
-        android:id="@+id/join_meeting_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Join a meeting"
-        android:textAllCaps="false"
-        android:fontFamily="@font/montserrat"
-        android:textColor="#FFF"
-        android:background="@drawable/join_button_background"
-        app:layout_constraintStart_toStartOf="@+id/textView2"
-        app:layout_constraintTop_toBottomOf="@+id/textView2" />
-
-    <Button
-        android:id="@+id/host_meeting_button"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:layout_marginTop="32dp"
-        android:fontFamily="@font/montserrat"
-        android:text="Host a meeting"
-        android:textAllCaps="false"
-        android:paddingRight="16dp"
-        android:paddingLeft="16dp"
-        android:background="@drawable/host_button_background"
-        app:layout_constraintStart_toStartOf="@+id/join_meeting_button"
-        app:layout_constraintTop_toBottomOf="@+id/join_meeting_button" />
-
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/wfh_9"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/host_meeting_button" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -113,30 +113,30 @@
                     android:visibility="visible" />
             </FrameLayout>
 
-            <EditText
-                android:id="@+id/session_name"
-                style="@android:style/Widget.Material.Button.Borderless.Colored"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/session_name"
-                android:inputType="text"
-                android:text="@string/default_session_name"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+<!--            <EditText-->
+<!--                android:id="@+id/session_name"-->
+<!--                style="@android:style/Widget.Material.Button.Borderless.Colored"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:hint="@string/session_name"-->
+<!--                android:inputType="text"-->
+<!--                android:text="@string/default_session_name"-->
+<!--                app:layout_constraintStart_toStartOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="parent" />-->
 
-            <EditText
-                android:id="@+id/participant_name"
-                style="@android:style/Widget.Material.Button.Borderless.Colored"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginTop="12dp"
-                android:hint="@string/participant_name"
-                android:inputType="text"
-                android:text="@string/default_participant_name"
-                app:layout_constraintStart_toStartOf="@+id/session_name"
-                app:layout_constraintTop_toBottomOf="@+id/session_name" />
+<!--            <EditText-->
+<!--                android:id="@+id/participant_name"-->
+<!--                style="@android:style/Widget.Material.Button.Borderless.Colored"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:layout_marginTop="12dp"-->
+<!--                android:hint="@string/participant_name"-->
+<!--                android:inputType="text"-->
+<!--                android:text="@string/default_participant_name"-->
+<!--                app:layout_constraintStart_toStartOf="@+id/session_name"-->
+<!--                app:layout_constraintTop_toBottomOf="@+id/session_name" />-->
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
