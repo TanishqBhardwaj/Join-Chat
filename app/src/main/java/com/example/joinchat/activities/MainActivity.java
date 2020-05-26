@@ -62,8 +62,6 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout views_container;
     @BindView(R.id.start_finish_call)
     Button start_finish_call;
-//    @BindView(R.id.session_name)
-//    EditText session_name;
 //    @BindView(R.id.participant_name)
 //    EditText participant_name;
     @BindView(R.id.local_gl_surface_view)
