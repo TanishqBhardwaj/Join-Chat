@@ -4,11 +4,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -16,12 +16,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.example.joinchat.R;
 import com.example.joinchat.fragments.PermissionsDialogFragment;
 import com.example.joinchat.openvidu.LocalParticipant;
@@ -29,7 +27,6 @@ import com.example.joinchat.openvidu.RemoteParticipant;
 import com.example.joinchat.openvidu.Session;
 import com.example.joinchat.utils.CustomHttpClient;
 import com.example.joinchat.websocket.CustomWebSocket;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,10 +34,7 @@ import org.webrtc.EglBase;
 import org.webrtc.MediaStream;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoTrack;
-
 import java.io.IOException;
-import java.util.Random;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import okhttp3.Call;
@@ -62,19 +56,19 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout views_container;
     @BindView(R.id.start_finish_call)
     Button start_finish_call;
-//    @BindView(R.id.participant_name)
-//    EditText participant_name;
     @BindView(R.id.local_gl_surface_view)
     SurfaceViewRenderer localVideoView;
-//    @BindView(R.id.main_participant)
-////    TextView main_participant;
     @BindView(R.id.peer_container)
     FrameLayout peer_container;
+
+    @BindView(R.id.video_on_off)
+    Button buttonVideoOnOff;
 
     private String OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
     private String OPENVIDU_SECRET = "qwerty@321";
     private Session session;
     private CustomHttpClient httpClient;
+    private LocalParticipant localParticipant;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -82,12 +76,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
         ButterKnife.bind(this);
-//        Random random = new Random();
-//        int randomIndex = random.nextInt(100);
-//        participant_name.setText(participant_name.getText().append(String.valueOf(randomIndex)));
     }
 
     public void askForPermissions() {
@@ -121,12 +113,11 @@ public class MainActivity extends AppCompatActivity {
             initViews();
             viewToConnectingState();
 
-//            OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
-//            OPENVIDU_SECRET = "qwerty@321";
-            httpClient = new CustomHttpClient(OPENVIDU_URL, "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET).getBytes(), android.util.Base64.DEFAULT).trim());
+            httpClient = new CustomHttpClient(OPENVIDU_URL,
+                    "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET)
+                            .getBytes(), android.util.Base64.DEFAULT).trim());
 
-//            String sessionId = session_name.getText().toString();
-            getToken(SESSION_ID);
+            getToken(getIntent().getStringExtra(SESSION_ID));
         } else {
             DialogFragment permissionsFragment = new PermissionsDialogFragment();
             permissionsFragment.show(getSupportFragmentManager(), "Permissions Fragment");
@@ -136,16 +127,21 @@ public class MainActivity extends AppCompatActivity {
     private void getToken(String sessionId) {
         try {
             // Session Request
-            RequestBody sessionBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "{\"customSessionId\": \"" + sessionId + "\"}");
-            this.httpClient.httpCall("/api/sessions", "POST", "application/json", sessionBody, new Callback() {
+            RequestBody sessionBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
+                    "{\"customSessionId\": \"" + sessionId + "\"}");
+            this.httpClient.httpCall("/api/sessions", "POST", "application/json",
+                    sessionBody, new Callback() {
 
                 @Override
                 public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                     Log.d(TAG, "responseString: " + response.body().string());
 
                     // Token Request
-                    RequestBody tokenBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "{\"session\": \"" + sessionId + "\"}");
-                    httpClient.httpCall("/api/tokens", "POST", "application/json", tokenBody, new Callback() {
+                    RequestBody tokenBody = RequestBody.create(MediaType.parse("application/json; " +
+                            "charset=utf-8"), "{\"session\": \"" + sessionId + "\"}");
+
+                    httpClient.httpCall("/api/tokens", "POST", "application/json",
+                            tokenBody, new Callback() {
 
                         @Override
                         public void onResponse(@NotNull Call call, @NotNull Response response) {
@@ -193,8 +189,8 @@ public class MainActivity extends AppCompatActivity {
         session = new Session(sessionId, token, views_container, this);
 
         // Initialize our local participant and start local camera
-//        String participantName = participant_name.getText().toString();
-        LocalParticipant localParticipant = new LocalParticipant(PARTICIPANT_NAME, session, this.getApplicationContext(), localVideoView);
+        localParticipant = new LocalParticipant(getIntent().getStringExtra(PARTICIPANT_NAME), session, this.getApplicationContext(),
+                localVideoView);
         localParticipant.startCamera();
         runOnUiThread(() -> {
             // Update local participant view
@@ -206,6 +202,18 @@ public class MainActivity extends AppCompatActivity {
         startWebSocket();
     }
 
+    public void setVideoOff(View view) throws InterruptedException {
+        if(buttonVideoOnOff.getText().equals("OFF")) {
+            localParticipant.setVideoOff();
+            localVideoView.clearImage();
+            buttonVideoOnOff.setText("ON");
+        }
+        else {
+            localParticipant.setVideoOn();
+            buttonVideoOnOff.setText("OFF");
+        }
+    }
+
     private void startWebSocket() {
         CustomWebSocket webSocket = new CustomWebSocket(session, OPENVIDU_URL, this);
         webSocket.execute();
@@ -214,7 +222,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void connectionError() {
         Runnable myRunnable = () -> {
-            Toast toast = Toast.makeText(this, "Error connecting to " + OPENVIDU_URL, Toast.LENGTH_LONG);
+            Toast toast = Toast.makeText(this, "Error connecting to " +
+                    OPENVIDU_URL, Toast.LENGTH_LONG);
             toast.show();
             viewToDisconnectedState();
         };
@@ -227,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
         localVideoView.setMirror(true);
         localVideoView.setEnableHardwareScaler(true);
         localVideoView.setZOrderMediaOverlay(true);
+//        localVideoView.onFrameResolutionChanged(480, 640, 0);
     }
 
     public void viewToDisconnectedState() {
@@ -235,22 +245,12 @@ public class MainActivity extends AppCompatActivity {
             localVideoView.release();
             start_finish_call.setText(getResources().getString(R.string.start_button));
             start_finish_call.setEnabled(true);
-//            session_name.setEnabled(true);
-//            session_name.setFocusableInTouchMode(true);
-//            participant_name.setEnabled(true);
-//            participant_name.setFocusableInTouchMode(true);
-//            main_participant.setText(null);
-//            main_participant.setPadding(0, 0, 0, 0);
         });
     }
 
     public void viewToConnectingState() {
         runOnUiThread(() -> {
             start_finish_call.setEnabled(false);
-//            session_name.setEnabled(false);
-//            session_name.setFocusable(false);
-//            participant_name.setEnabled(false);
-//            participant_name.setFocusable(false);
         });
     }
 
@@ -265,7 +265,9 @@ public class MainActivity extends AppCompatActivity {
         Handler mainHandler = new Handler(this.getMainLooper());
         Runnable myRunnable = () -> {
             View rowView = this.getLayoutInflater().inflate(R.layout.peer_video, null);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
             lp.setMargins(0, 0, 0, 20);
             rowView.setLayoutParams(lp);
             int rowId = View.generateViewId();
@@ -302,8 +304,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean arePermissionGranted() {
-        return (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_DENIED) &&
-                (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_DENIED);
+        return (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_DENIED) &&
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_DENIED);
     }
 
     @Override

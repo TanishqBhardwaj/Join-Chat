@@ -10,6 +10,7 @@ import org.webrtc.CameraEnumerator;
 import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
+import org.webrtc.PeerConnection;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
@@ -29,10 +30,11 @@ public class LocalParticipant extends Participant {
 
     private Collection<IceCandidate> localIceCandidates;
     private SessionDescription localSessionDescription;
+    private PeerConnectionFactory peerConnectionFactory;
 
-    public LocalParticipant(String participantName, Session session, Context context, SurfaceViewRenderer localVideoView) {
+    public LocalParticipant(String participantName, Session session, Context context,
+                            SurfaceViewRenderer localVideoView) {
         super(participantName, session);
-        this.localVideoView = localVideoView;
         this.localVideoView = localVideoView;
         this.context = context;
         this.participantName = participantName;
@@ -43,23 +45,34 @@ public class LocalParticipant extends Participant {
     public void startCamera() {
 
         final EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
-        PeerConnectionFactory peerConnectionFactory = this.session.getPeerConnectionFactory();
+        peerConnectionFactory = this.session.getPeerConnectionFactory();
+
+        surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBaseContext);
+        // create VideoCapturer
+        videoCapturer = createCameraCapturer();
+        VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
+        videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
+        videoCapturer.startCapture(480, 640, 30);
+
+        // create VideoTrack
+        this.videoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);
+        this.videoTrack.setEnabled(true);
 
         // create AudioSource
         AudioSource audioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
         this.audioTrack = peerConnectionFactory.createAudioTrack("101", audioSource);
+        this.audioTrack.setEnabled(true);
 
-        surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBaseContext);
-        // create VideoCapturer
-        VideoCapturer videoCapturer = createCameraCapturer();
-        VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
-        videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
-        videoCapturer.startCapture(480, 640, 40);
-
-        // create VideoTrack
-        this.videoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);
         // display in localView
         this.videoTrack.addSink(localVideoView);
+    }
+
+    public void setVideoOff() throws InterruptedException {
+        videoTrack.setEnabled(false);
+    }
+
+    public void setVideoOn() {
+        videoTrack.setEnabled(true);
     }
 
     private VideoCapturer createCameraCapturer() {

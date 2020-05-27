@@ -45,7 +45,8 @@ public class Session {
         this.views_container = views_container;
         this.activity = activity;
 
-        PeerConnectionFactory.InitializationOptions.Builder optionsBuilder = PeerConnectionFactory.InitializationOptions.builder(activity.getApplicationContext());
+        PeerConnectionFactory.InitializationOptions.Builder optionsBuilder = PeerConnectionFactory
+                .InitializationOptions.builder(activity.getApplicationContext());
         optionsBuilder.setEnableInternalTracer(true);
         PeerConnectionFactory.InitializationOptions opt = optionsBuilder.createInitializationOptions();
         PeerConnectionFactory.initialize(opt);
@@ -133,6 +134,7 @@ public class Session {
             }
         });
 
+        assert peerConnection != null;
         peerConnection.addTrack(localParticipant.getAudioTrack());//Add audio track to create transReceiver
         peerConnection.addTrack(localParticipant.getVideoTrack());//Add video track to create transReceiver
 

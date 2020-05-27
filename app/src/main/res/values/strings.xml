@@ -7,7 +7,7 @@
     <string name="default_participant_name">Participant</string>
     <string name="openvidu_url">OPENVIDU URL</string>
     <string name="openvidu_secret">OPENVIDU SECRET</string>
-    <string name="default_openvidu_url">https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com</string>
+    <string name="default_openvidu_url">https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com/</string>
     <string name="default_openvidu_secret">qwerty@321</string>
     <string name="hang_up">Leave session</string>
     <string name="no_connection">COULD NOT ESTABLISH THE CONNECTION, TRY AGAIN </string>
