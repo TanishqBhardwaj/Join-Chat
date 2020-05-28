@@ -1,6 +1,7 @@
 package com.example.joinchat.openvidu;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.Build;
 
 import org.webrtc.AudioSource;
@@ -42,14 +43,14 @@ public class LocalParticipant extends Participant {
         session.setLocalParticipant(this);
     }
 
-    public void startCamera() {
+    public void startCamera(int flag) {
 
         final EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
         peerConnectionFactory = this.session.getPeerConnectionFactory();
 
         surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBaseContext);
         // create VideoCapturer
-        videoCapturer = createCameraCapturer();
+        videoCapturer = createCameraCapturer(flag);
         VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
         videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
         videoCapturer.startCapture(480, 640, 30);
@@ -57,6 +58,10 @@ public class LocalParticipant extends Participant {
         // create VideoTrack
         this.videoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);
         this.videoTrack.setEnabled(true);
+
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setSpeakerphoneOn(true);
 
         // create AudioSource
         AudioSource audioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
@@ -67,7 +72,7 @@ public class LocalParticipant extends Participant {
         this.videoTrack.addSink(localVideoView);
     }
 
-    public void setVideoOff() throws InterruptedException {
+    public void setVideoOff() {
         videoTrack.setEnabled(false);
     }
 
@@ -75,33 +80,64 @@ public class LocalParticipant extends Participant {
         videoTrack.setEnabled(true);
     }
 
-    private VideoCapturer createCameraCapturer() {
+    public void setAudioOff() {
+        audioTrack.setEnabled(false);
+    }
+
+    public void setAudioOn() {
+        audioTrack.setEnabled(true);
+    }
+
+    public void stopCamera() {
+        dispose();
+    }
+
+    private VideoCapturer createCameraCapturer(int flag) {
         CameraEnumerator enumerator;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
-            enumerator = new Camera2Enumerator(this.context);
-        } else {
-            enumerator = new Camera1Enumerator(false);
-        }
+        enumerator = new Camera2Enumerator(this.context);
         final String[] deviceNames = enumerator.getDeviceNames();
 
-        // Try to find front facing camera
-        for (String deviceName : deviceNames) {
-            if (enumerator.isFrontFacing(deviceName)) {
-                videoCapturer = enumerator.createCapturer(deviceName, null);
-                if (videoCapturer != null) {
-                    return videoCapturer;
+        if(flag == 0) {
+
+            for (String deviceName : deviceNames) {
+                if (enumerator.isFrontFacing(deviceName)) {
+                    videoCapturer = enumerator.createCapturer(deviceName, null);
+                    if(videoCapturer!=null) {
+                        return videoCapturer;
+                    }
+                }
+            }
+
+            for (String deviceName : deviceNames) {
+                if (!enumerator.isFrontFacing(deviceName)) {
+                    videoCapturer = enumerator.createCapturer(deviceName, null);
+                    if (videoCapturer != null) {
+                        return videoCapturer;
+                    }
                 }
             }
         }
-        // Front facing camera not found, try something else
-        for (String deviceName : deviceNames) {
-            if (!enumerator.isFrontFacing(deviceName)) {
-                videoCapturer = enumerator.createCapturer(deviceName, null);
-                if (videoCapturer != null) {
-                    return videoCapturer;
+        else {
+
+            for (String deviceName : deviceNames) {
+                if (enumerator.isBackFacing(deviceName)) {
+                    videoCapturer = enumerator.createCapturer(deviceName, null);
+                    if (videoCapturer != null) {
+                        return videoCapturer;
+                    }
+                }
+            }
+
+            for (String deviceName : deviceNames) {
+                if (!enumerator.isBackFacing(deviceName)) {
+                    videoCapturer = enumerator.createCapturer(deviceName, null);
+                    if (videoCapturer != null) {
+                        return videoCapturer;
+                    }
                 }
             }
         }
+
         return null;
     }
 

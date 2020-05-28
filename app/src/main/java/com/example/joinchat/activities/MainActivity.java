@@ -8,6 +8,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.media.Image;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
+    private int flag;
     private final String TAG = "SessionActivity";
     @BindView(R.id.views_container)
     LinearLayout views_container;
@@ -61,8 +64,16 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.peer_container)
     FrameLayout peer_container;
 
-    @BindView(R.id.video_on_off)
-    Button buttonVideoOnOff;
+    @BindView(R.id.video_off)
+    ImageButton buttonVideoOff;
+    @BindView(R.id.video_on)
+    ImageButton buttonVideoOn;
+    @BindView(R.id.audio_on)
+    ImageButton buttonAudioOn;
+    @BindView(R.id.audio_off)
+    ImageButton buttonAudioOff;
+    @BindView(R.id.imageButtonCameraSwitch)
+    ImageButton buttonCameraSwitch;
 
     private String OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
     private String OPENVIDU_SECRET = "qwerty@321";
@@ -80,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
         ButterKnife.bind(this);
+        flag = 0;
     }
 
     public void askForPermissions() {
@@ -189,9 +201,9 @@ public class MainActivity extends AppCompatActivity {
         session = new Session(sessionId, token, views_container, this);
 
         // Initialize our local participant and start local camera
-        localParticipant = new LocalParticipant(getIntent().getStringExtra(PARTICIPANT_NAME), session, this.getApplicationContext(),
-                localVideoView);
-        localParticipant.startCamera();
+        localParticipant = new LocalParticipant(getIntent().getStringExtra(PARTICIPANT_NAME), session,
+                this.getApplicationContext(), localVideoView);
+        localParticipant.startCamera(flag);
         runOnUiThread(() -> {
             // Update local participant view
 //            main_participant.setText(participant_name.getText().toString());
@@ -202,16 +214,40 @@ public class MainActivity extends AppCompatActivity {
         startWebSocket();
     }
 
-    public void setVideoOff(View view) throws InterruptedException {
-        if(buttonVideoOnOff.getText().equals("OFF")) {
+    public void setVideoOff(View view) {
             localParticipant.setVideoOff();
             localVideoView.clearImage();
-            buttonVideoOnOff.setText("ON");
+            buttonVideoOff.setVisibility(View.GONE);
+            buttonVideoOn.setVisibility(View.VISIBLE);
+    }
+
+    public void setVideoOn(View view) {
+        localParticipant.setVideoOn();
+        buttonVideoOff.setVisibility(View.VISIBLE);
+        buttonVideoOn.setVisibility(View.GONE);
+    }
+
+    public void setAudioOff(View view) {
+        localParticipant.setAudioOff();
+        buttonAudioOff.setVisibility(View.GONE);
+        buttonAudioOn.setVisibility(View.VISIBLE);
+    }
+
+    public void setAudioOn(View view) {
+        localParticipant.setAudioOn();
+        buttonAudioOff.setVisibility(View.VISIBLE);
+        buttonAudioOn.setVisibility(View.GONE);
+    }
+
+    public void cameraSwitch(View view) {
+        if(flag == 0) {
+            flag = 1;
         }
         else {
-            localParticipant.setVideoOn();
-            buttonVideoOnOff.setText("OFF");
+            flag = 0;
         }
+        localParticipant.stopCamera();
+        localParticipant.startCamera(flag);
     }
 
     private void startWebSocket() {

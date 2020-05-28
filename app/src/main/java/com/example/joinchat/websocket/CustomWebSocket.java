@@ -187,7 +187,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         publishVideoParams.put("hasAudio", "true");
         publishVideoParams.put("hasVideo", "true");
         publishVideoParams.put("typeOfVideo", "CAMERA");
-        publishVideoParams.put("videoDimensions", "{\"width\":320, \"height\":240}");
+        publishVideoParams.put("videoDimensions", "{\"width\":640, \"height\":480}");
         publishVideoParams.put("sdpOffer", sessionDescription.description);
         this.ID_PUBLISHVIDEO.set(this.sendJson(JsonConstants.PUBLISHVIDEO_METHOD, publishVideoParams));
     }

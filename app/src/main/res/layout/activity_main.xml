@@ -69,30 +69,73 @@
             </FrameLayout>
 
         <Button
-            android:id="@+id/video_on_off"
-            style="@android:style/Widget.Material.Button.Borderless.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:onClick="setVideoOff"
-            android:text="OFF"
-            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
             android:id="@+id/start_finish_call"
             style="@android:style/Widget.Material.Button.Borderless.Colored"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_margin="5dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:onClick="buttonPressed"
             android:text="@string/start_button"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/video_on"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:onClick="setVideoOn"
+            android:visibility="gone"
+            android:src="@android:drawable/presence_video_online"
+            app:layout_constraintBottom_toBottomOf="@+id/start_finish_call"
+            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/audio_on"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="80dp"
+            android:onClick="setAudioOn"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/start_finish_call"
+            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
+            app:layout_constraintTop_toTopOf="@+id/start_finish_call"
+            app:srcCompat="@android:drawable/presence_audio_online" />
+
+        <ImageButton
+            android:id="@+id/video_off"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:onClick="setVideoOff"
+            app:layout_constraintBottom_toBottomOf="@+id/start_finish_call"
+            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
+            app:layout_constraintTop_toTopOf="@+id/start_finish_call"
+            app:srcCompat="@android:drawable/presence_video_busy" />
+
+        <ImageButton
+            android:id="@+id/audio_off"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:onClick="setAudioOff"
+            app:layout_constraintBottom_toBottomOf="@+id/start_finish_call"
+            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
+            app:layout_constraintTop_toTopOf="@+id/start_finish_call"
+            app:srcCompat="@android:drawable/presence_audio_busy" />
+
+        <ImageButton
+            android:id="@+id/imageButtonCameraSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="116dp"
+            android:onClick="cameraSwitch"
+            app:layout_constraintBottom_toBottomOf="@+id/start_finish_call"
+            app:layout_constraintStart_toEndOf="@+id/start_finish_call"
+            app:layout_constraintTop_toTopOf="@+id/start_finish_call"
+            app:srcCompat="@android:drawable/stat_notify_sync" />
 
         <!--            <EditText-->
 <!--                android:id="@+id/session_name"-->
