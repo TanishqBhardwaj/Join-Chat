@@ -1,11 +1,13 @@
 package com.example.joinchat.activities;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.media.Image;
@@ -28,6 +30,7 @@ import com.example.joinchat.openvidu.LocalParticipant;
 import com.example.joinchat.openvidu.RemoteParticipant;
 import com.example.joinchat.openvidu.Session;
 import com.example.joinchat.utils.CustomHttpClient;
+import com.example.joinchat.utils.prefUtils;
 import com.example.joinchat.websocket.CustomWebSocket;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -63,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
     SurfaceViewRenderer localVideoView;
     @BindView(R.id.peer_container)
     FrameLayout peer_container;
+    @BindView(R.id.log_out_button)
+    Button log_out_button;
 
     @BindView(R.id.video_off)
     ImageButton buttonVideoOff;
@@ -80,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
     private Session session;
     private CustomHttpClient httpClient;
     private LocalParticipant localParticipant;
+    private prefUtils pr;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -90,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
+        pr = new prefUtils(this);
         ButterKnife.bind(this);
         flag = 0;
     }
@@ -364,4 +371,22 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
+    public void logout(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener()
+                {
+                    public void onClick(DialogInterface dialog, int id) {
+                        pr.logoutUser();
+                        finish();
+                        dialog.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.dismiss();
+                    }
+                });
+        builder.create().show();
+    }
 }
