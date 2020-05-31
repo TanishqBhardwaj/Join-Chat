@@ -76,6 +76,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     private AtomicInteger ID_JOINROOM = new AtomicInteger(-1);
     private AtomicInteger ID_LEAVEROOM = new AtomicInteger(-1);
     private AtomicInteger ID_PUBLISHVIDEO = new AtomicInteger(-1);
+    private AtomicInteger ID_UNPUBLISHVIDEO = new AtomicInteger(-1);
     private Map<Integer, String> IDS_RECEIVEVIDEO = new ConcurrentHashMap<>();
     private Set<Integer> IDS_ONICECANDIDATE = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private Session session;
@@ -119,6 +120,8 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
             localParticipant.setConnectionId(localConnectionId);
 
             PeerConnection localPeerConnection = session.createLocalPeerConnection();
+
+//            localPeerConnection.addStream(localParticipant.getMediaStream());
 
             localPeerConnection.addTrack(localParticipant.getAudioTrack());
             localPeerConnection.addTrack(localParticipant.getVideoTrack());
@@ -171,6 +174,13 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         joinRoomParams.put("session", this.session.getId());
         joinRoomParams.put("platform", "Android " + android.os.Build.VERSION.SDK_INT);
         joinRoomParams.put("token", this.session.getToken());
+
+
+        /////////////////////////////////////////////
+        joinRoomParams.put("recorder", "false");
+        /////////////////////////////////////////////
+
+
         this.ID_JOINROOM.set(this.sendJson(JsonConstants.JOINROOM_METHOD, joinRoomParams));
     }
 
@@ -190,6 +200,11 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         publishVideoParams.put("videoDimensions", "{\"width\":640, \"height\":480}");
         publishVideoParams.put("sdpOffer", sessionDescription.description);
         this.ID_PUBLISHVIDEO.set(this.sendJson(JsonConstants.PUBLISHVIDEO_METHOD, publishVideoParams));
+    }
+
+    public void unpublishVideo() {
+        Map<String, String> unpublishVideoParams = new HashMap<>();
+        this.ID_UNPUBLISHVIDEO.set(this.sendJson(JsonConstants.UNPUBLISHVIDEO_METHOD, unpublishVideoParams));
     }
 
     public void receiveVideoFrom(SessionDescription sessionDescription, RemoteParticipant remoteParticipant, String streamId) {

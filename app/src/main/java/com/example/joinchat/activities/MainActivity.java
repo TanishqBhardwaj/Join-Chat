@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.EglBase;
+import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoTrack;
@@ -53,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
-    private int flag;
     private final String TAG = "SessionActivity";
     @BindView(R.id.views_container)
     LinearLayout views_container;
@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private Session session;
     private CustomHttpClient httpClient;
     private LocalParticipant localParticipant;
+    private String token = "";
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -91,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
         ButterKnife.bind(this);
-        flag = 0;
     }
 
     public void askForPermissions() {
@@ -197,13 +197,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getTokenSuccess(String token, String sessionId) {
+        this.token = token;
         // Initialize our session
         session = new Session(sessionId, token, views_container, this);
 
         // Initialize our local participant and start local camera
         localParticipant = new LocalParticipant(getIntent().getStringExtra(PARTICIPANT_NAME), session,
                 this.getApplicationContext(), localVideoView);
-        localParticipant.startCamera(flag);
+        localParticipant.startCamera();
         runOnUiThread(() -> {
             // Update local participant view
 //            main_participant.setText(participant_name.getText().toString());
@@ -211,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Initialize and connect the websocket to OpenVidu Server
-        startWebSocket();
+         startWebSocket();
     }
 
     public void setVideoOff(View view) {
@@ -240,14 +241,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void cameraSwitch(View view) {
-        if(flag == 0) {
-            flag = 1;
-        }
-        else {
-            flag = 0;
-        }
-        localParticipant.stopCamera();
-        localParticipant.startCamera(flag);
+        localParticipant.switchCamera();
     }
 
     private void startWebSocket() {

@@ -68,6 +68,10 @@ public class Session {
         this.websocket = websocket;
     }
 
+    public CustomWebSocket getWebsocket() {
+        return websocket;
+    }
+
     public PeerConnection createLocalPeerConnection() {
         final List<PeerConnection.IceServer> iceServers = new ArrayList<>();
         PeerConnection.IceServer iceServer = PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer();

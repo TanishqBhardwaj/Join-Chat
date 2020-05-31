@@ -2,16 +2,14 @@ package com.example.joinchat.openvidu;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.Build;
-
 import org.webrtc.AudioSource;
-import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
+import org.webrtc.CameraVideoCapturer;
 import org.webrtc.EglBase;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
-import org.webrtc.PeerConnection;
+import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
@@ -43,14 +41,14 @@ public class LocalParticipant extends Participant {
         session.setLocalParticipant(this);
     }
 
-    public void startCamera(int flag) {
+    public void startCamera() {
 
         final EglBase.Context eglBaseContext = EglBase.create().getEglBaseContext();
         peerConnectionFactory = this.session.getPeerConnectionFactory();
 
         surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBaseContext);
         // create VideoCapturer
-        videoCapturer = createCameraCapturer(flag);
+        videoCapturer = createCameraCapturer();
         VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
         videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
         videoCapturer.startCapture(480, 640, 30);
@@ -67,6 +65,12 @@ public class LocalParticipant extends Participant {
         AudioSource audioSource = peerConnectionFactory.createAudioSource(new MediaConstraints());
         this.audioTrack = peerConnectionFactory.createAudioTrack("101", audioSource);
         this.audioTrack.setEnabled(true);
+
+        MediaStream mediaStreamTrack = peerConnectionFactory.createLocalMediaStream("media");
+        mediaStreamTrack.addTrack(audioTrack);
+        mediaStreamTrack.addTrack(videoTrack);
+
+        setMediaStream(mediaStreamTrack);
 
         // display in localView
         this.videoTrack.addSink(localVideoView);
@@ -88,16 +92,21 @@ public class LocalParticipant extends Participant {
         audioTrack.setEnabled(true);
     }
 
-    public void stopCamera() {
-        dispose();
+    public void switchCamera() {
+        if (videoCapturer != null) {
+            if (videoCapturer instanceof CameraVideoCapturer) {
+                CameraVideoCapturer cameraVideoCapturer = (CameraVideoCapturer) videoCapturer;
+                cameraVideoCapturer.switchCamera(null);
+            } else {
+                // Will not switch camera, video capturer is not a camera
+            }
+        }
     }
 
-    private VideoCapturer createCameraCapturer(int flag) {
+    private VideoCapturer createCameraCapturer() {
         CameraEnumerator enumerator;
         enumerator = new Camera2Enumerator(this.context);
         final String[] deviceNames = enumerator.getDeviceNames();
-
-        if(flag == 0) {
 
             for (String deviceName : deviceNames) {
                 if (enumerator.isFrontFacing(deviceName)) {
@@ -116,27 +125,6 @@ public class LocalParticipant extends Participant {
                     }
                 }
             }
-        }
-        else {
-
-            for (String deviceName : deviceNames) {
-                if (enumerator.isBackFacing(deviceName)) {
-                    videoCapturer = enumerator.createCapturer(deviceName, null);
-                    if (videoCapturer != null) {
-                        return videoCapturer;
-                    }
-                }
-            }
-
-            for (String deviceName : deviceNames) {
-                if (!enumerator.isBackFacing(deviceName)) {
-                    videoCapturer = enumerator.createCapturer(deviceName, null);
-                    if (videoCapturer != null) {
-                        return videoCapturer;
-                    }
-                }
-            }
-        }
 
         return null;
     }
