@@ -18,6 +18,7 @@ import com.example.joinchat.Models.LoginBody;
 import com.example.joinchat.Models.LoginResponse;
 import com.example.joinchat.R;
 import com.example.joinchat.activities.MainActivity;
+import com.example.joinchat.activities.StartActivity;
 import com.example.joinchat.utils.JsonApiHolder;
 import com.example.joinchat.utils.RetrofitInstance;
 import com.example.joinchat.utils.prefUtils;
@@ -81,7 +82,7 @@ public class LoginFragment extends Fragment {
                 if(response.isSuccessful()){
                     LoginResponse loginResponse = response.body();
                     pr.createLogin(loginResponse.getToken());
-                    Intent intent = new Intent(getContext(), MainActivity.class);
+                    Intent intent = new Intent(getContext(), StartActivity.class);
                     startActivity(intent);
                 }
             }

@@ -86,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
     private CustomHttpClient httpClient;
     private LocalParticipant localParticipant;
     private prefUtils pr;
-    private String token = "";
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -204,7 +203,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getTokenSuccess(String token, String sessionId) {
-        this.token = token;
         // Initialize our session
         session = new Session(sessionId, token, views_container, this);
 

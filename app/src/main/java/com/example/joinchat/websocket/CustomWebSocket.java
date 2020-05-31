@@ -174,13 +174,6 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         joinRoomParams.put("session", this.session.getId());
         joinRoomParams.put("platform", "Android " + android.os.Build.VERSION.SDK_INT);
         joinRoomParams.put("token", this.session.getToken());
-
-
-        /////////////////////////////////////////////
-        joinRoomParams.put("recorder", "false");
-        /////////////////////////////////////////////
-
-
         this.ID_JOINROOM.set(this.sendJson(JsonConstants.JOINROOM_METHOD, joinRoomParams));
     }
 

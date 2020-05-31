@@ -17,6 +17,7 @@ import com.example.joinchat.Models.LoginResponse;
 import com.example.joinchat.Models.VerifyOtpBody;
 import com.example.joinchat.R;
 import com.example.joinchat.activities.MainActivity;
+import com.example.joinchat.activities.StartActivity;
 import com.example.joinchat.utils.JsonApiHolder;
 import com.example.joinchat.utils.RetrofitInstance;
 import com.example.joinchat.utils.prefUtils;
@@ -68,7 +69,7 @@ public class OtpFragment extends Fragment {
                     Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
                     LoginResponse loginResponse = response.body();
                     pr.createLogin(loginResponse.getToken());
-                    Intent intent = new Intent(getContext(), MainActivity.class);
+                    Intent intent = new Intent(getContext(), StartActivity.class);
                     startActivity(intent);
                 }
                 else{
