@@ -8,6 +8,7 @@ import androidx.fragment.app.DialogFragment;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.media.Image;
@@ -24,12 +25,18 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.joinchat.Models.SessionResponse;
+import com.example.joinchat.Models.TokenBody;
+import com.example.joinchat.Models.TokenResponse;
 import com.example.joinchat.R;
 import com.example.joinchat.fragments.PermissionsDialogFragment;
 import com.example.joinchat.openvidu.LocalParticipant;
 import com.example.joinchat.openvidu.RemoteParticipant;
 import com.example.joinchat.openvidu.Session;
 import com.example.joinchat.utils.CustomHttpClient;
+import com.example.joinchat.utils.JsonApiHolder;
+import com.example.joinchat.utils.RetrofitInstance;
 import com.example.joinchat.utils.prefUtils;
 import com.example.joinchat.websocket.CustomWebSocket;
 import org.jetbrains.annotations.NotNull;
@@ -43,17 +50,17 @@ import org.webrtc.VideoTrack;
 import java.io.IOException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
-import okhttp3.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
 
-    public static final String SESSION_ID = "SessionA";
-    public static final String PARTICIPANT_NAME = "participant99";
+    private String SESSION_ID;
+    public static final String PARTICIPANT_NAME = prefUtils.getUserName();
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
@@ -86,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
     private CustomHttpClient httpClient;
     private LocalParticipant localParticipant;
     private prefUtils pr;
+    private JsonApiHolder jsonApiHolder;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -93,11 +101,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
+        jsonApiHolder = RetrofitInstance.getRetrofitInstance(this).create(JsonApiHolder.class);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         askForPermissions();
         pr = new prefUtils(this);
         ButterKnife.bind(this);
+        start_finish_call.setText(getResources().getString(R.string.hang_up));
+        buttonPressed();
     }
 
     public void askForPermissions() {
@@ -121,12 +132,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void buttonPressed(View view) {
-        if (start_finish_call.getText().equals(getResources().getString(R.string.hang_up))) {
-            // Already connected to a session
-            leaveSession();
-            return;
-        }
+    public void hangUp(View view){
+        leaveSession();
+        Intent intent = new Intent(this, StartActivity.class);
+        startActivity(intent);
+    }
+
+    public void buttonPressed() {
         if (arePermissionGranted()) {
             initViews();
             viewToConnectingState();
@@ -135,88 +147,134 @@ public class MainActivity extends AppCompatActivity {
                     "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET)
                             .getBytes(), android.util.Base64.DEFAULT).trim());
 
-            getToken(getIntent().getStringExtra(SESSION_ID));
+            // TODO fetch the session id, then send it here
+            getSessionId();
+
         } else {
             DialogFragment permissionsFragment = new PermissionsDialogFragment();
             permissionsFragment.show(getSupportFragmentManager(), "Permissions Fragment");
         }
     }
 
-    private void getToken(String sessionId) {
-        try {
-            // Session Request
-            RequestBody sessionBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
-                    "{\"customSessionId\": \"" + sessionId + "\"}");
-            this.httpClient.httpCall("/api/sessions", "POST", "application/json",
-                    sessionBody, new Callback() {
+    private void getSessionId() {
 
-                @Override
-                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                    Log.d(TAG, "responseString: " + response.body().string());
-
-                    // Token Request
-                    RequestBody tokenBody = RequestBody.create(MediaType.parse("application/json; " +
-                            "charset=utf-8"), "{\"session\": \"" + sessionId + "\"}");
-
-                    httpClient.httpCall("/api/tokens", "POST", "application/json",
-                            tokenBody, new Callback() {
-
-                        @Override
-                        public void onResponse(@NotNull Call call, @NotNull Response response) {
-                            String responseString = null;
-                            try {
-                                responseString = response.body().string();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Error getting body", e);
-                            }
-                            Log.d(TAG, "responseString2: " + responseString);
-                            JSONObject tokenJsonObject = null;
-                            String token = null;
-                            try {
-                                tokenJsonObject = new JSONObject(responseString);
-                                token = tokenJsonObject.getString("token");
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                            getTokenSuccess(token, sessionId);
-                        }
-
-                        @Override
-                        public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                            Log.e(TAG, "Error POST /api/tokens", e);
-                            connectionError();
-                        }
-                    });
+        retrofit2.Call<SessionResponse> call = jsonApiHolder.getSession("Bearer " + prefUtils.getAuthToken());
+        call.enqueue(new retrofit2.Callback<SessionResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<SessionResponse> call, retrofit2.Response<SessionResponse> response) {
+                if(response.isSuccessful()){
+                    SessionResponse sessionResponse = response.body();
+                    SESSION_ID = sessionResponse.getSessionId();
+                    Log.d("SESSION ID: ", String.valueOf(SESSION_ID));
+                    getToken(SESSION_ID);
                 }
-
-                @Override
-                public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                    Log.e(TAG, "Error POST /api/sessions", e);
-                    connectionError();
+                else{
+                    Toast.makeText(MainActivity.this, "Session ID not fetched!", Toast.LENGTH_SHORT).show();
                 }
-            });
-        } catch (IOException e) {
-            Log.e(TAG, "Error getting token", e);
-            e.printStackTrace();
-            connectionError();
-        }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<SessionResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    }
+
+//    private void getToken(String sessionId) {
+//        try {
+//            // Session Request
+//            RequestBody sessionBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
+//                    "{\"customSessionId\": \"" + sessionId + "\"}");
+//            this.httpClient.httpCall("/api/sessions", "POST", "application/json",
+//                    sessionBody, new Callback() {
+//
+//                @Override
+//                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+//                    Log.d(TAG, "responseString: " + response.body().string());
+//
+//                    // Token Request
+//                    RequestBody tokenBody = RequestBody.create(MediaType.parse("application/json; " +
+//                            "charset=utf-8"), "{\"session\": \"" + sessionId + "\"}");
+//
+//                    httpClient.httpCall("/api/tokens", "POST", "application/json",
+//                            tokenBody, new Callback() {
+//
+//                        @Override
+//                        public void onResponse(@NotNull Call call, @NotNull Response response) {
+//                            String responseString = null;
+//                            try {
+//                                responseString = response.body().string();
+//                            } catch (IOException e) {
+//                                Log.e(TAG, "Error getting body", e);
+//                            }
+//                            Log.d(TAG, "responseString2: " + responseString);
+//                            JSONObject tokenJsonObject = null;
+//                            String token = null;
+//                            try {
+//                                tokenJsonObject = new JSONObject(responseString);
+//                                token = tokenJsonObject.getString("token");
+//                            } catch (JSONException e) {
+//                                e.printStackTrace();
+//                            }
+//                            getTokenSuccess(token, sessionId);
+//                        }
+//
+//                        @Override
+//                        public void onFailure(@NotNull Call call, @NotNull IOException e) {
+//                            Log.e(TAG, "Error POST /api/tokens", e);
+//                            connectionError();
+//                        }
+//                    });
+//                }
+//
+//                @Override
+//                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+//                    Log.e(TAG, "Error POST /api/sessions", e);
+//                    connectionError();
+//                }
+//            });
+//        } catch (IOException e) {
+//            Log.e(TAG, "Error getting token", e);
+//            e.printStackTrace();
+//            connectionError();
+//        }
+//    }
+
+    private void getToken(String sessionId){
+
+        Call<TokenResponse> call = jsonApiHolder.getVideoToken("Bearer " + prefUtils.getAuthToken(), new TokenBody(sessionId));
+        call.enqueue(new Callback<TokenResponse>() {
+            @Override
+            public void onResponse(Call<TokenResponse> call, Response<TokenResponse> response) {
+                if(response.isSuccessful()){
+                    TokenResponse tokenResponse = response.body();
+                    String token = tokenResponse.getToken();
+                    getTokenSuccess(token, sessionId);
+                }
+                else{
+                    Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TokenResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
     }
 
     private void getTokenSuccess(String token, String sessionId) {
         // Initialize our session
         session = new Session(sessionId, token, views_container, this);
 
-        // Initialize our local participant and start local camera
-        localParticipant = new LocalParticipant(getIntent().getStringExtra(PARTICIPANT_NAME), session,
+        localParticipant = new LocalParticipant(PARTICIPANT_NAME, session,
                 this.getApplicationContext(), localVideoView);
         localParticipant.startCamera();
         runOnUiThread(() -> {
-            // Update local participant view
-//            main_participant.setText(participant_name.getText().toString());
-//            main_participant.setPadding(20, 3, 20, 3);
         });
 
-        // Initialize and connect the websocket to OpenVidu Server
          startWebSocket();
     }
 
@@ -271,15 +329,12 @@ public class MainActivity extends AppCompatActivity {
         localVideoView.setMirror(true);
         localVideoView.setEnableHardwareScaler(true);
         localVideoView.setZOrderMediaOverlay(true);
-//        localVideoView.onFrameResolutionChanged(480, 640, 0);
     }
 
     public void viewToDisconnectedState() {
         runOnUiThread(() -> {
             localVideoView.clearImage();
             localVideoView.release();
-            start_finish_call.setText(getResources().getString(R.string.start_button));
-            start_finish_call.setEnabled(true);
         });
     }
 

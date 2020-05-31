@@ -17,8 +17,8 @@ public class prefUtils {
 
     private static final String IS_LOGIN = "isLoggedIn";
     private static final String IS_PROFILE_SAVED = "profileRequired";
-
-    public static final String KEY_TOKEN = "token";
+    private static final String USER_NAME = "name";
+    private static final String KEY_TOKEN = "token";
 
 
     public prefUtils(Context context){
@@ -28,15 +28,17 @@ public class prefUtils {
         profile_editor = sp.edit();
     }
 
-    public void createLogin(String token){
+    public void createLogin(String token, String name){
 
+        editor.putString(USER_NAME, name);
         editor.putBoolean(IS_LOGIN, true);
         editor.putString(KEY_TOKEN, token);
         editor.commit();
     }
 
-    public void storeProfile() {
+    public void storeProfile(String name) {
         profile_editor.putBoolean(IS_PROFILE_SAVED, true);
+        profile_editor.putString(USER_NAME, name);
         profile_editor.commit();
     }
 
@@ -48,7 +50,11 @@ public class prefUtils {
         return sp.getBoolean(IS_LOGIN, false);
     }
 
-    public static String getToken() {
+    public static String getUserName(){
+        return sp.getString(USER_NAME, null);
+    }
+
+    public static String getAuthToken() {
         return sp.getString(KEY_TOKEN, null);
     }
 

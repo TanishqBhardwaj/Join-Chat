@@ -56,8 +56,6 @@ public class JoinMeetingFragment extends Fragment {
             return;
         }
         Intent intent = new Intent(getContext(), MainActivity.class);
-        intent.putExtra(MainActivity.SESSION_ID, session);
-        intent.putExtra(MainActivity.PARTICIPANT_NAME, name);
         startActivity(intent);
 
     }

@@ -2,23 +2,16 @@ package com.example.joinchat.Models;
 
 import com.google.gson.annotations.SerializedName;
 
-public class LoginResponse {
+public class TokenResponse {
 
     @SerializedName("token")
     private String token;
-    private String name;
 
-    public LoginResponse(String token, String name) {
+    public TokenResponse(String token) {
         this.token = token;
-        this.name = name;
-
     }
 
     public String getToken() {
         return token;
-    }
-
-    public String getUserName(){
-        return name;
     }
 }

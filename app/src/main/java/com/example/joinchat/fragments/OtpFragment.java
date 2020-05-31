@@ -14,15 +14,14 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.joinchat.Models.LoginResponse;
+import com.example.joinchat.Models.ProfileResponse;
 import com.example.joinchat.Models.VerifyOtpBody;
 import com.example.joinchat.R;
-import com.example.joinchat.activities.MainActivity;
 import com.example.joinchat.activities.StartActivity;
 import com.example.joinchat.utils.JsonApiHolder;
 import com.example.joinchat.utils.RetrofitInstance;
 import com.example.joinchat.utils.prefUtils;
 
-import butterknife.BindView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -68,7 +67,8 @@ public class OtpFragment extends Fragment {
                 if(response.isSuccessful()){
                     Toast.makeText(getContext(), "Account created successfully!", Toast.LENGTH_SHORT).show();
                     LoginResponse loginResponse = response.body();
-                    pr.createLogin(loginResponse.getToken());
+                    pr.createLogin(loginResponse.getToken(), loginResponse.getUserName());
+//                    getProfile();
                     Intent intent = new Intent(getContext(), StartActivity.class);
                     startActivity(intent);
                 }
@@ -79,6 +79,28 @@ public class OtpFragment extends Fragment {
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Toast.makeText(getContext(), "An error occurred!", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void getProfile() {
+
+        Call<ProfileResponse> call = jsonApiHolder.getUserDetails(prefUtils.getAuthToken());
+        call.enqueue(new Callback<ProfileResponse>() {
+            @Override
+            public void onResponse(Call<ProfileResponse> call, Response<ProfileResponse> response) {
+                if(response.isSuccessful()){
+                    ProfileResponse profileResponse = response.body();
+                    pr.storeProfile(profileResponse.getName());
+                }
+                else{
+                    Toast.makeText(getContext(), "An error occurred!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProfileResponse> call, Throwable t) {
                 Toast.makeText(getContext(), "An error occurred!", Toast.LENGTH_SHORT).show();
             }
         });
