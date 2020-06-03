@@ -99,6 +99,7 @@ public class LoginFragment extends Fragment {
                 else{
                     Toast.makeText(getContext(), "An error occurred!", Toast.LENGTH_SHORT).show();
                 }
+                Toast.makeText(getContext(), "Error occurred!", Toast.LENGTH_SHORT).show();
             }
 
             @Override

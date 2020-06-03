@@ -1,5 +1,6 @@
 package com.example.joinchat.activities;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -7,15 +8,23 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.media.Image;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -23,6 +32,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -58,12 +68,14 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-
     private String SESSION_ID;
-    public static final String PARTICIPANT_NAME = prefUtils.getUserName();
+    public String PARTICIPANT_NAME="name";
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
+    private static final int PERMISSION_CODE = 1;
+    private static final int REQUEST_MEDIA_PROJECTION = 2;
+    public static String FLAG = "0";
     private final String TAG = "SessionActivity";
     @BindView(R.id.views_container)
     LinearLayout views_container;
@@ -86,6 +98,12 @@ public class MainActivity extends AppCompatActivity {
     ImageButton buttonAudioOff;
     @BindView(R.id.imageButtonCameraSwitch)
     ImageButton buttonCameraSwitch;
+    @BindView(R.id.screenShareButton)
+    ImageButton buttonScreenShare;
+    @BindView(R.id.textViewRoomName)
+    TextView textViewRoomName;
+    @BindView(R.id.progress_bar)
+    ProgressBar progressBar;
 
     private String OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
     private String OPENVIDU_SECRET = "qwerty@321";
@@ -94,6 +112,15 @@ public class MainActivity extends AppCompatActivity {
     private LocalParticipant localParticipant;
     private prefUtils pr;
     private JsonApiHolder jsonApiHolder;
+
+    private static final String STATE_RESULT_CODE = "result_code";
+    private static final String STATE_RESULT_DATA = "result_data";
+    private int mScreenDensity;
+    private int mResultCode;
+    private Intent mResultData;
+    private MediaProjection mMediaProjection;
+    private VirtualDisplay mVirtualDisplay;
+    private MediaProjectionManager mMediaProjectionManager;
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -104,11 +131,39 @@ public class MainActivity extends AppCompatActivity {
         jsonApiHolder = RetrofitInstance.getRetrofitInstance(this).create(JsonApiHolder.class);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+
+        ///////////////////////////////////////
+        if (savedInstanceState != null) {
+            mResultCode = savedInstanceState.getInt(STATE_RESULT_CODE);
+            mResultData = savedInstanceState.getParcelable(STATE_RESULT_DATA);
+        }
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        mScreenDensity = metrics.densityDpi;
+        mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        /////////////////////////////////
+
         askForPermissions();
         pr = new prefUtils(this);
         ButterKnife.bind(this);
-        start_finish_call.setText(getResources().getString(R.string.hang_up));
-        buttonPressed();
+        PARTICIPANT_NAME= pr.getUserName();
+        if(getIntent().getStringExtra(FLAG).equals("0")) {
+            getToken(pr.getVideoSession());
+        }
+        else {
+            getSessionId();
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mResultData != null) {
+            outState.putInt(STATE_RESULT_CODE, mResultCode);
+            outState.putParcelable(STATE_RESULT_DATA, mResultData);
+        }
     }
 
     public void askForPermissions() {
@@ -132,25 +187,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void hangUp(View view){
-        leaveSession();
-        Intent intent = new Intent(this, StartActivity.class);
-        startActivity(intent);
-    }
-
-    public void buttonPressed() {
+    public void buttonPressed(View view) {
+        if (start_finish_call.getText().equals(getResources().getString(R.string.hang_up))) {
+            // Already connected to a session
+            leaveSession();
+            return;
+        }
         if (arePermissionGranted()) {
             initViews();
             viewToConnectingState();
 
-            httpClient = new CustomHttpClient(OPENVIDU_URL,
-                    "Basic " + android.util.Base64.encodeToString(("OPENVIDUAPP:" + OPENVIDU_SECRET)
-                            .getBytes(), android.util.Base64.DEFAULT).trim());
-
-            // TODO fetch the session id, then send it here
-            getSessionId();
-
-        } else {
+            getTokenSuccess(pr.getVideoToken(), pr.getVideoSession());
+        }
+        else {
             DialogFragment permissionsFragment = new PermissionsDialogFragment();
             permissionsFragment.show(getSupportFragmentManager(), "Permissions Fragment");
         }
@@ -181,66 +230,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-//    private void getToken(String sessionId) {
-//        try {
-//            // Session Request
-//            RequestBody sessionBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
-//                    "{\"customSessionId\": \"" + sessionId + "\"}");
-//            this.httpClient.httpCall("/api/sessions", "POST", "application/json",
-//                    sessionBody, new Callback() {
-//
-//                @Override
-//                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-//                    Log.d(TAG, "responseString: " + response.body().string());
-//
-//                    // Token Request
-//                    RequestBody tokenBody = RequestBody.create(MediaType.parse("application/json; " +
-//                            "charset=utf-8"), "{\"session\": \"" + sessionId + "\"}");
-//
-//                    httpClient.httpCall("/api/tokens", "POST", "application/json",
-//                            tokenBody, new Callback() {
-//
-//                        @Override
-//                        public void onResponse(@NotNull Call call, @NotNull Response response) {
-//                            String responseString = null;
-//                            try {
-//                                responseString = response.body().string();
-//                            } catch (IOException e) {
-//                                Log.e(TAG, "Error getting body", e);
-//                            }
-//                            Log.d(TAG, "responseString2: " + responseString);
-//                            JSONObject tokenJsonObject = null;
-//                            String token = null;
-//                            try {
-//                                tokenJsonObject = new JSONObject(responseString);
-//                                token = tokenJsonObject.getString("token");
-//                            } catch (JSONException e) {
-//                                e.printStackTrace();
-//                            }
-//                            getTokenSuccess(token, sessionId);
-//                        }
-//
-//                        @Override
-//                        public void onFailure(@NotNull Call call, @NotNull IOException e) {
-//                            Log.e(TAG, "Error POST /api/tokens", e);
-//                            connectionError();
-//                        }
-//                    });
-//                }
-//
-//                @Override
-//                public void onFailure(@NotNull Call call, @NotNull IOException e) {
-//                    Log.e(TAG, "Error POST /api/sessions", e);
-//                    connectionError();
-//                }
-//            });
-//        } catch (IOException e) {
-//            Log.e(TAG, "Error getting token", e);
-//            e.printStackTrace();
-//            connectionError();
-//        }
-//    }
-
     private void getToken(String sessionId){
 
         Call<TokenResponse> call = jsonApiHolder.getVideoToken("Bearer " + prefUtils.getAuthToken(), new TokenBody(sessionId));
@@ -250,7 +239,11 @@ public class MainActivity extends AppCompatActivity {
                 if(response.isSuccessful()){
                     TokenResponse tokenResponse = response.body();
                     String token = tokenResponse.getToken();
-                    getTokenSuccess(token, sessionId);
+                    pr.setVideoSession(sessionId);
+                    pr.setVideoToken(token);
+                    textViewRoomName.setText("Room Name : " + pr.getVideoSession());
+                    progressBar.setVisibility(View.GONE);
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
                 }
                 else{
                     Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
@@ -307,6 +300,58 @@ public class MainActivity extends AppCompatActivity {
         localParticipant.switchCamera();
     }
 
+    public void screenShare(View view) {
+        if (mVirtualDisplay == null) {
+            startScreenCapture();
+        } else {
+//            stopScreenCapture();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PERMISSION_CODE) {
+            Log.e(TAG, "Unknown request code: " + requestCode);
+            return;
+        }
+        if (resultCode != RESULT_OK) {
+            Toast.makeText(this,
+                    "Screen Cast Permission Denied", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mResultCode = resultCode;
+        mResultData = data;
+        setUpMediaProjection();
+        setUpVirtualDisplay();
+    }
+
+    private void setUpMediaProjection() {
+        mMediaProjection = mMediaProjectionManager.getMediaProjection(mResultCode, mResultData);
+    }
+
+    private void startScreenCapture() {
+        if (mMediaProjection != null) {
+            setUpVirtualDisplay();
+        } else if (mResultCode != 0 && mResultData != null) {
+            setUpMediaProjection();
+            setUpVirtualDisplay();
+        } else {
+            Log.i(TAG, "Requesting confirmation");
+            // This initiates a prompt dialog for the user to confirm screen projection.
+            startActivityForResult(
+                    mMediaProjectionManager.createScreenCaptureIntent(),
+                    REQUEST_MEDIA_PROJECTION);
+        }
+    }
+
+    private void setUpVirtualDisplay() {
+        mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCapture",
+                480, 640, mScreenDensity,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                localVideoView.getHolder().getSurface(), null, null);
+    }
+
     private void startWebSocket() {
         CustomWebSocket webSocket = new CustomWebSocket(session, OPENVIDU_URL, this);
         webSocket.execute();
@@ -335,6 +380,8 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             localVideoView.clearImage();
             localVideoView.release();
+            start_finish_call.setText(getResources().getString(R.string.start_button));
+            start_finish_call.setEnabled(true);
         });
     }
 
@@ -389,7 +436,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void leaveSession() {
         this.session.leaveSession();
-        this.httpClient.dispose();
         viewToDisconnectedState();
     }
 

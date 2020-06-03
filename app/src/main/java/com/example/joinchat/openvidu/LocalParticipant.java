@@ -1,7 +1,14 @@
 package com.example.joinchat.openvidu;
 
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
+import android.util.Log;
+
+import com.example.joinchat.activities.MainActivity;
+
 import org.webrtc.AudioSource;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
@@ -11,6 +18,7 @@ import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
+import org.webrtc.ScreenCapturerAndroid;
 import org.webrtc.SessionDescription;
 import org.webrtc.SurfaceTextureHelper;
 import org.webrtc.SurfaceViewRenderer;
@@ -49,7 +57,7 @@ public class LocalParticipant extends Participant {
         surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBaseContext);
         // create VideoCapturer
         videoCapturer = createCameraCapturer();
-        VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
+        VideoSource videoSource = peerConnectionFactory.createVideoSource(true);
         videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
         videoCapturer.startCapture(480, 640, 30);
 
@@ -100,6 +108,33 @@ public class LocalParticipant extends Participant {
             } else {
                 // Will not switch camera, video capturer is not a camera
             }
+        }
+    }
+
+    public void screenShare(Intent data) {
+        if (videoCapturer != null) {
+            Log.d("OUTSIDE", "screenShare: ");
+
+                videoTrack.removeSink(localVideoView);
+                videoCapturer.dispose();
+                videoCapturer = null;
+
+                videoCapturer = new ScreenCapturerAndroid(data, new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        super.onStop();
+                        Log.e("Local Participant", "User revoked permission to capture the screen.");
+                    }
+                });
+
+                VideoSource videoSource = peerConnectionFactory.createVideoSource(videoCapturer.isScreencast());
+                videoCapturer.initialize(surfaceTextureHelper, context, videoSource.getCapturerObserver());
+                videoCapturer.startCapture(480, 640, 30);
+
+                this.videoTrack = peerConnectionFactory.createVideoTrack("100", videoSource);
+                this.videoTrack.setEnabled(true);
+
+                this.videoTrack.addSink(localVideoView);
         }
     }
 

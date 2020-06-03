@@ -33,6 +33,7 @@ public final class JsonConstants {
     public static final String ADDFILTEREVENTLISTENER_METHOD = "addFilterEventListener";
     public static final String REMOVEFILTEREVENTLISTENER_METHOD = "removeFilterEventListener";
     public static final String PING_METHOD = "ping";
+    public static final String RECONNECT_STREAM = "reconnectStream";
 
     public static final String JSON_RPCVERSION = "2.0";
 

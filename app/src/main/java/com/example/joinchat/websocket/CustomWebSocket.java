@@ -1,5 +1,6 @@
 package com.example.joinchat.websocket;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.util.Log;
@@ -12,6 +13,7 @@ import com.example.joinchat.openvidu.LocalParticipant;
 import com.example.joinchat.openvidu.Participant;
 import com.example.joinchat.openvidu.RemoteParticipant;
 import com.example.joinchat.openvidu.Session;
+import com.example.joinchat.utils.prefUtils;
 import com.neovisionaries.ws.client.ThreadType;
 import com.neovisionaries.ws.client.WebSocket;
 import com.neovisionaries.ws.client.WebSocketException;
@@ -77,6 +79,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     private AtomicInteger ID_LEAVEROOM = new AtomicInteger(-1);
     private AtomicInteger ID_PUBLISHVIDEO = new AtomicInteger(-1);
     private AtomicInteger ID_UNPUBLISHVIDEO = new AtomicInteger(-1);
+    private AtomicInteger ID_RECONNECTSTREAM = new AtomicInteger(-1);
     private Map<Integer, String> IDS_RECEIVEVIDEO = new ConcurrentHashMap<>();
     private Set<Integer> IDS_ONICECANDIDATE = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private Session session;
@@ -84,11 +87,14 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     private MainActivity activity;
     private WebSocket websocket;
     private boolean websocketCancelled = false;
+    private String streamId;
+    prefUtils pr;
 
     public CustomWebSocket(Session session, String openviduUrl, MainActivity activity) {
         this.session = session;
         this.openviduUrl = openviduUrl;
         this.activity = activity;
+        pr = new prefUtils(activity.getApplicationContext());
     }
 
     @Override
@@ -135,7 +141,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
             MediaConstraints sdpConstraints = new MediaConstraints();
             sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
             sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
-            session.createLocalOffer(sdpConstraints);
+            session.createLocalOffer(sdpConstraints, 0);
 
             if (result.getJSONArray(JsonConstants.VALUE).length() > 0) {
                 // There were users already connected to the session
@@ -150,6 +156,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
 
         } else if (rpcId == this.ID_PUBLISHVIDEO.get()) {
             // Response to publishVideo
+            streamId = result.getString("id");
             SessionDescription sessionDescription = new SessionDescription(SessionDescription.Type.ANSWER, result.getString("sdpAnswer"));
             this.session.getLocalParticipant().getPeerConnection().setRemoteDescription(new CustomSdpObserver("localSetRemoteDesc"), sessionDescription);
 
@@ -162,7 +169,12 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
             // Response to onIceCandidate
             IDS_ONICECANDIDATE.remove(rpcId);
 
-        } else {
+        }
+        else if(rpcId == this.ID_RECONNECTSTREAM.get()) {
+            SessionDescription sessionDescription = new SessionDescription(SessionDescription.Type.ANSWER, result.getString("sdpAnswer"));
+            this.session.getLocalParticipant().getPeerConnection().setRemoteDescription(new CustomSdpObserver("localSetRemoteDesc"), sessionDescription);
+        }
+        else{
             Log.e(TAG, "Unrecognized server response: " + result);
         }
     }
@@ -216,6 +228,13 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         onIceCandidateParams.put("sdpMid", iceCandidate.sdpMid);
         onIceCandidateParams.put("sdpMLineIndex", Integer.toString(iceCandidate.sdpMLineIndex));
         this.IDS_ONICECANDIDATE.add(this.sendJson(JsonConstants.ONICECANDIDATE_METHOD, onIceCandidateParams));
+    }
+
+    public void reconnectStream(SessionDescription sessionDescription, String streamId) {
+        Map<String, String> reconnectStreamParams = new HashMap<>();
+        reconnectStreamParams.put("stream", streamId);
+        reconnectStreamParams.put("sdpOffer", sessionDescription.description);
+        this.ID_RECONNECTSTREAM.set(this.sendJson(JsonConstants.RECONNECT_STREAM, reconnectStreamParams));
     }
 
     private void handleServerEvent(JSONObject json) throws JSONException {
@@ -402,6 +421,14 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     public void onDisconnected(WebSocket websocket, WebSocketFrame
             serverCloseFrame, WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
         Log.e(TAG, "Disconnected " + serverCloseFrame.getCloseReason() + " " + clientCloseFrame.getCloseReason() + " " + closedByServer);
+
+        if(serverCloseFrame.getCloseReason().equals("Close for not receive ping from client")) {
+            Log.e(TAG, "RECONNECTING........ ");
+            MediaConstraints sdpConstraints = new MediaConstraints();
+            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
+            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
+            session.createLocalOffer(sdpConstraints, 1);
+        }
     }
 
     @Override
@@ -559,6 +586,10 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
             e.printStackTrace();
             return "";
         }
+    }
+
+    public String getStreamId() {
+        return streamId;
     }
 
     @Override

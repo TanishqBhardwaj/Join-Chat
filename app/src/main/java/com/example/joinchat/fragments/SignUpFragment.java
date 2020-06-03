@@ -80,7 +80,7 @@ public class SignUpFragment extends Fragment {
                             new OtpFragment()).commit();
                 }
                 else{
-                    Toast.makeText(getContext(), "An error occurred!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Something wrong!", Toast.LENGTH_SHORT).show();
                 }
 
             }

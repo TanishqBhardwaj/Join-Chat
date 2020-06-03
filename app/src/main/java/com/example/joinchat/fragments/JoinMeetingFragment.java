@@ -13,22 +13,30 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.joinchat.Models.TokenBody;
+import com.example.joinchat.Models.TokenResponse;
 import com.example.joinchat.R;
 import com.example.joinchat.activities.MainActivity;
+import com.example.joinchat.utils.JsonApiHolder;
+import com.example.joinchat.utils.RetrofitInstance;
+import com.example.joinchat.utils.prefUtils;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class JoinMeetingFragment extends Fragment {
 
-    EditText name_edit_text;
-    EditText email_edit_text;
     EditText session_id_edit_text;
-
+    private prefUtils pr;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.join_meeting_fragment, container, false);
-        name_edit_text = view.findViewById(R.id.name_edit_text);
-        email_edit_text = view.findViewById(R.id.email_edit_text);
+        pr = new prefUtils(getContext());
+
         session_id_edit_text = view.findViewById(R.id.session_id_edit_text);
 
         Button join_meeting_button = view.findViewById(R.id.join_button);
@@ -43,20 +51,15 @@ public class JoinMeetingFragment extends Fragment {
     }
 
     private void join_meeting() {
-        String name = name_edit_text.getText().toString().trim();
-        String email = email_edit_text.getText().toString().trim();
         String session = session_id_edit_text.getText().toString().trim();
 
-        if(name.isEmpty()){
-            Toast.makeText(getContext(), "Name can't be empty!", Toast.LENGTH_SHORT).show();
-            return;
-        }
         if(session.isEmpty()){
-            Toast.makeText(getContext(), "Session ID can't be empty!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Room Name can't be empty!", Toast.LENGTH_SHORT).show();
             return;
         }
+        pr.setVideoSession(session);
         Intent intent = new Intent(getContext(), MainActivity.class);
+        intent.putExtra(MainActivity.FLAG, "0");
         startActivity(intent);
-
     }
 }

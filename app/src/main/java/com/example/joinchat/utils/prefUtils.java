@@ -19,6 +19,8 @@ public class prefUtils {
     private static final String IS_PROFILE_SAVED = "profileRequired";
     private static final String USER_NAME = "name";
     private static final String KEY_TOKEN = "token";
+    private static final String VIDEO_TOKEN = "videoToken";
+    private static final String VIDEO_SESSION = "videoSession";
 
 
     public prefUtils(Context context){
@@ -42,6 +44,24 @@ public class prefUtils {
         profile_editor.commit();
     }
 
+    public void setVideoSession(String session) {
+        editor.putString(VIDEO_SESSION, session);
+        editor.commit();
+    }
+
+    public void setVideoToken(String token) {
+        editor.putString(VIDEO_TOKEN, token);
+        editor.commit();
+    }
+
+    public String getVideoSession() {
+        return sp.getString(VIDEO_SESSION, null);
+    }
+
+    public String getVideoToken() {
+        return sp.getString(VIDEO_TOKEN, null);
+    }
+
     public boolean isProfileSaved(){
         return sp.getBoolean(IS_PROFILE_SAVED, false);
     }
@@ -50,7 +70,7 @@ public class prefUtils {
         return sp.getBoolean(IS_LOGIN, false);
     }
 
-    public static String getUserName(){
+    public String getUserName(){
         return sp.getString(USER_NAME, null);
     }
 
@@ -66,6 +86,5 @@ public class prefUtils {
         profile_editor.commit();
         Intent i = new Intent(ctx, LoginSignUpActivity.class);
         ctx.startActivity(i);
-
     }
 }

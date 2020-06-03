@@ -150,14 +150,19 @@ public class Session {
         this.remoteParticipants.get(connectionId).setPeerConnection(peerConnection);
     }
 
-    public void createLocalOffer(MediaConstraints constraints) {
+    public void createLocalOffer(MediaConstraints constraints, int flag) {
         localParticipant.getPeerConnection().createOffer(new CustomSdpObserver("local offer sdp") {
             @Override
             public void onCreateSuccess(SessionDescription sessionDescription) {
                 super.onCreateSuccess(sessionDescription);
                 Log.i("createOffer SUCCESS", sessionDescription.toString());
                 localParticipant.getPeerConnection().setLocalDescription(new CustomSdpObserver("local set local"), sessionDescription);
-                websocket.publishVideo(sessionDescription);
+                if(flag == 0) {
+                    websocket.publishVideo(sessionDescription);
+                }
+                else {
+                    websocket.reconnectStream(sessionDescription, websocket.getStreamId());
+                }
             }
 
             @Override
