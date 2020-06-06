@@ -68,8 +68,8 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String SESSION_ID;
     public String PARTICIPANT_NAME="name";
+    public static String SESSION_ID = "sessionID";
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
@@ -148,13 +148,12 @@ public class MainActivity extends AppCompatActivity {
         askForPermissions();
         pr = new prefUtils(this);
         ButterKnife.bind(this);
-        PARTICIPANT_NAME= pr.getUserName();
-        if(getIntent().getStringExtra(FLAG).equals("0")) {
-            getToken(pr.getVideoSession());
-        }
-        else {
-            getSessionId();
-        }
+        start_finish_call.setEnabled(false);
+        log_out_button.setEnabled(false);
+        PARTICIPANT_NAME = pr.getUserName();
+
+        getToken(getIntent().getStringExtra(SESSION_ID));
+
     }
 
     @Override
@@ -188,11 +187,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void buttonPressed(View view) {
-        if (start_finish_call.getText().equals(getResources().getString(R.string.hang_up))) {
-            // Already connected to a session
-            leaveSession();
-            return;
-        }
+        leaveSession();
+    }
+
+    private void startCall(){
         if (arePermissionGranted()) {
             initViews();
             viewToConnectingState();
@@ -205,30 +203,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getSessionId() {
-
-        retrofit2.Call<SessionResponse> call = jsonApiHolder.getSession("Bearer " + prefUtils.getAuthToken());
-        call.enqueue(new retrofit2.Callback<SessionResponse>() {
-            @Override
-            public void onResponse(retrofit2.Call<SessionResponse> call, retrofit2.Response<SessionResponse> response) {
-                if(response.isSuccessful()){
-                    SessionResponse sessionResponse = response.body();
-                    SESSION_ID = sessionResponse.getSessionId();
-                    Log.d("SESSION ID: ", String.valueOf(SESSION_ID));
-                    getToken(SESSION_ID);
-                }
-                else{
-                    Toast.makeText(MainActivity.this, "Session ID not fetched!", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(retrofit2.Call<SessionResponse> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-    }
 
     private void getToken(String sessionId){
 
@@ -243,10 +217,15 @@ public class MainActivity extends AppCompatActivity {
                     pr.setVideoToken(token);
                     textViewRoomName.setText("Room Name : " + pr.getVideoSession());
                     progressBar.setVisibility(View.GONE);
+                    start_finish_call.setEnabled(true);
+                    log_out_button.setEnabled(true);
                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                    startCall();
                 }
                 else{
-                    Toast.makeText(MainActivity.this, "An error occurred!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Invalid Room ID!", Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.GONE);
+                    leaveSession();
                 }
             }
 
@@ -272,10 +251,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setVideoOff(View view) {
-            localParticipant.setVideoOff();
-            localVideoView.clearImage();
-            buttonVideoOff.setVisibility(View.GONE);
-            buttonVideoOn.setVisibility(View.VISIBLE);
+            if(localParticipant != null) {
+                localParticipant.setVideoOff();
+                localVideoView.clearImage();
+                buttonVideoOff.setVisibility(View.GONE);
+                buttonVideoOn.setVisibility(View.VISIBLE);
+            }
     }
 
     public void setVideoOn(View view) {
@@ -285,9 +266,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setAudioOff(View view) {
-        localParticipant.setAudioOff();
-        buttonAudioOff.setVisibility(View.GONE);
-        buttonAudioOn.setVisibility(View.VISIBLE);
+        if (localParticipant != null) {
+            localParticipant.setAudioOff();
+            buttonAudioOff.setVisibility(View.GONE);
+            buttonAudioOn.setVisibility(View.VISIBLE);
+
+        }
     }
 
     public void setAudioOn(View view) {
@@ -297,7 +281,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void cameraSwitch(View view) {
-        localParticipant.switchCamera();
+        if(localParticipant != null)
+            localParticipant.switchCamera();
     }
 
     public void screenShare(View view) {
@@ -382,18 +367,20 @@ public class MainActivity extends AppCompatActivity {
             localVideoView.release();
             start_finish_call.setText(getResources().getString(R.string.start_button));
             start_finish_call.setEnabled(true);
+            log_out_button.setEnabled(true);
         });
     }
 
     public void viewToConnectingState() {
         runOnUiThread(() -> {
             start_finish_call.setEnabled(false);
+            log_out_button.setEnabled(false);
         });
     }
 
     public void viewToConnectedState() {
         runOnUiThread(() -> {
-            start_finish_call.setText(getResources().getString(R.string.hang_up));
+            log_out_button.setEnabled(true);
             start_finish_call.setEnabled(true);
         });
     }
@@ -435,8 +422,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void leaveSession() {
-        this.session.leaveSession();
-        viewToDisconnectedState();
+        if(this.session != null)
+            this.session.leaveSession();
+
+        // TODO ERROR HERE ON FINISHING THE ACTIVITY OF STARTING THE "START ACTIVITY"
+//        Intent i = new Intent(this, StartActivity.class);
+//        startActivity(i);
+        runOnUiThread(this::finish);
     }
 
     private boolean arePermissionGranted() {
@@ -470,6 +462,7 @@ public class MainActivity extends AppCompatActivity {
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener()
                 {
                     public void onClick(DialogInterface dialog, int id) {
+                        leaveSession();
                         pr.logoutUser();
                         finish();
                         dialog.dismiss();
@@ -482,4 +475,5 @@ public class MainActivity extends AppCompatActivity {
                 });
         builder.create().show();
     }
+
 }

@@ -1,9 +1,11 @@
 package com.example.joinchat.fragments;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -63,6 +65,7 @@ public class SignUpFragment extends Fragment {
     }
 
     private void sign_up() {
+        closeKeyboard();
         String name = name_edit_text.getText().toString().trim();
         String email = email_edit_text.getText().toString().trim();
         String password = password_edit_text.getText().toString().trim();
@@ -91,6 +94,15 @@ public class SignUpFragment extends Fragment {
             }
         });
 
+    }
+
+    private void closeKeyboard() {
+
+        View view = getActivity().getCurrentFocus();
+        if(view != null){
+            InputMethodManager inputMethodManager = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken() , 0);
+        }
     }
 
 }

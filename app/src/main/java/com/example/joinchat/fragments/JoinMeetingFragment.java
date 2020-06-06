@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -57,9 +58,12 @@ public class JoinMeetingFragment extends Fragment {
             Toast.makeText(getContext(), "Room Name can't be empty!", Toast.LENGTH_SHORT).show();
             return;
         }
-        pr.setVideoSession(session);
+//        pr.setVideoSession(session);
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.FLAG, "0");
+        intent.putExtra(MainActivity.SESSION_ID, session);
         startActivity(intent);
     }
+
+
 }
