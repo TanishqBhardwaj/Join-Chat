@@ -11,6 +11,10 @@ public class TokenResponse {
         this.token = token;
     }
 
+    public void testMethod(){
+        String string = "test";
+    }
+
     public String getToken() {
         return token;
     }
