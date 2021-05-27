@@ -13,6 +13,7 @@ public class TokenResponse {
 
     public void testMethod(){
         String string = "test";
+        int N = 1000;
     }
 
     public String getToken() {
