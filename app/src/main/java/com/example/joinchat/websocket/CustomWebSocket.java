@@ -3,6 +3,7 @@ package com.example.joinchat.websocket;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -127,8 +128,6 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
 
             PeerConnection localPeerConnection = session.createLocalPeerConnection();
 
-//            localPeerConnection.addStream(localParticipant.getMediaStream());
-
             localPeerConnection.addTrack(localParticipant.getAudioTrack());
             localPeerConnection.addTrack(localParticipant.getVideoTrack());
 
@@ -171,6 +170,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
 
         }
         else if(rpcId == this.ID_RECONNECTSTREAM.get()) {
+            Log.e(TAG, "handleServerResponse: " + result.getString("sdpAnswer"));
             SessionDescription sessionDescription = new SessionDescription(SessionDescription.Type.ANSWER, result.getString("sdpAnswer"));
             this.session.getLocalParticipant().getPeerConnection().setRemoteDescription(new CustomSdpObserver("localSetRemoteDesc"), sessionDescription);
         }
@@ -186,6 +186,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         joinRoomParams.put("session", this.session.getId());
         joinRoomParams.put("platform", "Android " + android.os.Build.VERSION.SDK_INT);
         joinRoomParams.put("token", this.session.getToken());
+        joinRoomParams.put("recorder", "false");
         this.ID_JOINROOM.set(this.sendJson(JsonConstants.JOINROOM_METHOD, joinRoomParams));
     }
 
@@ -291,7 +292,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
             JSONException {
         for (int i = 0; i < result.getJSONArray(JsonConstants.VALUE).length(); i++) {
             JSONObject participantJson = result.getJSONArray(JsonConstants.VALUE).getJSONObject(i);
-            RemoteParticipant remoteParticipant = this.newRemoteParticipantAux(participantJson);
+            RemoteParticipant remoteParticipant = this.newRemoteParticipantAux(participantJson,0);
             try {
                 JSONArray streams = participantJson.getJSONArray("streams");
                 for (int j = 0; j < streams.length(); j++) {
@@ -331,7 +332,7 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     }
 
     private void participantJoinedEvent(JSONObject params) throws JSONException {
-        this.newRemoteParticipantAux(params);
+        this.newRemoteParticipantAux(params, 1);
     }
 
     private void participantPublishedEvent(JSONObject params) throws
@@ -346,11 +347,15 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
         final RemoteParticipant remoteParticipant = this.session.removeRemoteParticipant(params.getString("connectionId"));
         remoteParticipant.dispose();
         Handler mainHandler = new Handler(activity.getMainLooper());
-        Runnable myRunnable = () -> session.removeView(remoteParticipant.getView());
+        Runnable myRunnable = () -> {
+            session.removeView(remoteParticipant.getView());
+            Toast.makeText(activity.getApplicationContext(), remoteParticipant.getParticipantName() + " left",
+                    Toast.LENGTH_LONG).show();
+        };
         mainHandler.post(myRunnable);
     }
 
-    private RemoteParticipant newRemoteParticipantAux(JSONObject participantJson) throws JSONException {
+    private RemoteParticipant newRemoteParticipantAux(JSONObject participantJson, int flag) throws JSONException {
         final String connectionId = participantJson.getString(JsonConstants.ID);
         String participantName = "";
         if (participantJson.getString(JsonConstants.METADATA) != null) {
@@ -360,6 +365,14 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
                 String clientData = json.getString("clientData");
                 if (clientData != null) {
                     participantName = clientData;
+                    final String name = participantName;
+                    if(flag == 1) {
+                        Runnable myRunnable = () -> {
+                            Toast.makeText(activity.getApplicationContext(), name + " joined",
+                                    Toast.LENGTH_LONG).show();
+                        };
+                        new Handler(Looper.getMainLooper()).post(myRunnable);
+                    }
                 }
             } catch(JSONException e) {
                 participantName = jsonStringified;
@@ -402,6 +415,12 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     @Override
     public void onStateChanged(WebSocket websocket, WebSocketState newState) throws Exception {
         Log.i(TAG, "State changed: " + newState.name());
+        if(newState.name().equals(WebSocketState.CLOSING)) {
+            MediaConstraints sdpConstraints = new MediaConstraints();
+            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
+            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
+            this.session.createLocalOffer(sdpConstraints, 1);
+        }
     }
 
     @Override
@@ -421,14 +440,6 @@ public class CustomWebSocket extends AsyncTask<MainActivity, Void, Void> impleme
     public void onDisconnected(WebSocket websocket, WebSocketFrame
             serverCloseFrame, WebSocketFrame clientCloseFrame, boolean closedByServer) throws Exception {
         Log.e(TAG, "Disconnected " + serverCloseFrame.getCloseReason() + " " + clientCloseFrame.getCloseReason() + " " + closedByServer);
-
-        if(serverCloseFrame.getCloseReason().equals("Close for not receive ping from client")) {
-            Log.e(TAG, "RECONNECTING........ ");
-            MediaConstraints sdpConstraints = new MediaConstraints();
-            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
-            sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
-            session.createLocalOffer(sdpConstraints, 1);
-        }
     }
 
     @Override

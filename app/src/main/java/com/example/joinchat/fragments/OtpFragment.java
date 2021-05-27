@@ -42,12 +42,8 @@ public class OtpFragment extends Fragment {
         otp_edit_text = view.findViewById(R.id.otp_edit_text);
         jsonApiHolder = RetrofitInstance.getRetrofitInstance(getContext()).create(JsonApiHolder.class);
         pr = new prefUtils(getContext());
-        verify_otp_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                verify_otp();
-            }
-        });
+
+        verify_otp_button.setOnClickListener(v -> verify_otp());
 
         return view;
     }

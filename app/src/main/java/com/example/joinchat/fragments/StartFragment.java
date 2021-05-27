@@ -44,22 +44,15 @@ public class StartFragment extends Fragment {
         Button join_meeting_button = view.findViewById(R.id.join_meeting_button);
         Button host_meeting_button = view.findViewById(R.id.host_meeting_button);
 
-        join_meeting_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        join_meeting_button.setOnClickListener(v ->
                 getFragmentManager().beginTransaction().replace(R.id.fragment_container_start_activity,
-                        new JoinMeetingFragment()).addToBackStack(null).commit();
-            }
-        });
+                new JoinMeetingFragment()).addToBackStack(null).commit());
 
-        host_meeting_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressBar.setVisibility(View.VISIBLE);
-                join_meeting_button.setEnabled(false);
-                host_meeting_button.setEnabled(false);
-                getSessionId();
-            }
+        host_meeting_button.setOnClickListener(v -> {
+            progressBar.setVisibility(View.VISIBLE);
+            join_meeting_button.setEnabled(false);
+            host_meeting_button.setEnabled(false);
+            getSessionId();
         });
         return view;
     }

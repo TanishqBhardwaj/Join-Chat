@@ -55,7 +55,10 @@ import org.json.JSONObject;
 import org.webrtc.EglBase;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
+import org.webrtc.RendererCommon;
+import org.webrtc.ScreenCapturerAndroid;
 import org.webrtc.SurfaceViewRenderer;
+import org.webrtc.VideoCapturer;
 import org.webrtc.VideoTrack;
 import java.io.IOException;
 import butterknife.BindView;
@@ -73,8 +76,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int MY_PERMISSIONS_REQUEST_CAMERA = 100;
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 101;
     private static final int MY_PERMISSIONS_REQUEST = 102;
-    private static final int PERMISSION_CODE = 1;
-    private static final int REQUEST_MEDIA_PROJECTION = 2;
+//    private static final int PERMISSION_CODE = 1;
+    private static final int REQUEST_MEDIA_PROJECTION = 1;
     public static String FLAG = "0";
     private final String TAG = "SessionActivity";
     @BindView(R.id.views_container)
@@ -106,20 +109,16 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar progressBar;
 
     private String OPENVIDU_URL = "https://ec2-13-235-159-249.ap-south-1.compute.amazonaws.com";
-    private String OPENVIDU_SECRET = "qwerty@321";
     private Session session;
-    private CustomHttpClient httpClient;
     private LocalParticipant localParticipant;
     private prefUtils pr;
     private JsonApiHolder jsonApiHolder;
-
     private static final String STATE_RESULT_CODE = "result_code";
     private static final String STATE_RESULT_DATA = "result_data";
-    private int mScreenDensity;
+    private int mScreenWidth;
+    private int mScreenHeight;
     private int mResultCode;
     private Intent mResultData;
-    private MediaProjection mMediaProjection;
-    private VirtualDisplay mVirtualDisplay;
     private MediaProjectionManager mMediaProjectionManager;
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -139,10 +138,6 @@ public class MainActivity extends AppCompatActivity {
             mResultCode = savedInstanceState.getInt(STATE_RESULT_CODE);
             mResultData = savedInstanceState.getParcelable(STATE_RESULT_DATA);
         }
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        mScreenDensity = metrics.densityDpi;
-        mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
         /////////////////////////////////
 
         askForPermissions();
@@ -194,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
         if (arePermissionGranted()) {
             initViews();
             viewToConnectingState();
-
             getTokenSuccess(pr.getVideoToken(), pr.getVideoSession());
         }
         else {
@@ -202,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
             permissionsFragment.show(getSupportFragmentManager(), "Permissions Fragment");
         }
     }
-
 
     private void getToken(String sessionId){
 
@@ -243,11 +236,13 @@ public class MainActivity extends AppCompatActivity {
 
         localParticipant = new LocalParticipant(PARTICIPANT_NAME, session,
                 this.getApplicationContext(), localVideoView);
+//        mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+//        assert mMediaProjectionManager != null;
+//        startActivityForResult(
+//                mMediaProjectionManager.createScreenCaptureIntent(), REQUEST_MEDIA_PROJECTION);
         localParticipant.startCamera();
-        runOnUiThread(() -> {
-        });
 
-         startWebSocket();
+        startWebSocket();
     }
 
     public void setVideoOff(View view) {
@@ -286,55 +281,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void screenShare(View view) {
-        if (mVirtualDisplay == null) {
-            startScreenCapture();
-        } else {
-//            stopScreenCapture();
-        }
+//        mMediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+//
+//        startActivityForResult(
+//                mMediaProjectionManager.createScreenCaptureIntent(), REQUEST_MEDIA_PROJECTION);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != PERMISSION_CODE) {
-            Log.e(TAG, "Unknown request code: " + requestCode);
-            return;
+        if (requestCode == REQUEST_MEDIA_PROJECTION) {
+            if (resultCode != RESULT_OK) {
+                Toast.makeText(this,
+                        "Screen Cast Permission Denied", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Log.i(TAG, "Starting screen capture");
+            mResultCode = resultCode;
+            mResultData = data;
+            localParticipant.screenShare(mResultCode, mResultData);
         }
-        if (resultCode != RESULT_OK) {
-            Toast.makeText(this,
-                    "Screen Cast Permission Denied", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        mResultCode = resultCode;
-        mResultData = data;
-        setUpMediaProjection();
-        setUpVirtualDisplay();
-    }
-
-    private void setUpMediaProjection() {
-        mMediaProjection = mMediaProjectionManager.getMediaProjection(mResultCode, mResultData);
-    }
-
-    private void startScreenCapture() {
-        if (mMediaProjection != null) {
-            setUpVirtualDisplay();
-        } else if (mResultCode != 0 && mResultData != null) {
-            setUpMediaProjection();
-            setUpVirtualDisplay();
-        } else {
-            Log.i(TAG, "Requesting confirmation");
-            // This initiates a prompt dialog for the user to confirm screen projection.
-            startActivityForResult(
-                    mMediaProjectionManager.createScreenCaptureIntent(),
-                    REQUEST_MEDIA_PROJECTION);
-        }
-    }
-
-    private void setUpVirtualDisplay() {
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCapture",
-                480, 640, mScreenDensity,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                localVideoView.getHolder().getSurface(), null, null);
     }
 
     private void startWebSocket() {
@@ -359,6 +325,7 @@ public class MainActivity extends AppCompatActivity {
         localVideoView.setMirror(true);
         localVideoView.setEnableHardwareScaler(true);
         localVideoView.setZOrderMediaOverlay(true);
+        localVideoView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
     }
 
     public void viewToDisconnectedState() {
@@ -403,6 +370,7 @@ public class MainActivity extends AppCompatActivity {
             EglBase rootEglBase = EglBase.create();
             videoView.init(rootEglBase.getEglBaseContext(), null);
             videoView.setZOrderMediaOverlay(true);
+            videoView.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
             View textView = ((ViewGroup) rowView).getChildAt(1);
             remoteParticipant.setParticipantNameText((TextView) textView);
             remoteParticipant.setView(rowView);
@@ -422,13 +390,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void leaveSession() {
-        if(this.session != null)
+//        if(this.session != null)
             this.session.leaveSession();
 
         // TODO ERROR HERE ON FINISHING THE ACTIVITY OF STARTING THE "START ACTIVITY"
-//        Intent i = new Intent(this, StartActivity.class);
-//        startActivity(i);
-        runOnUiThread(this::finish);
+        Intent i = new Intent(this, StartActivity.class);
+        startActivity(i);
+
     }
 
     private boolean arePermissionGranted() {
@@ -459,20 +427,13 @@ public class MainActivity extends AppCompatActivity {
     public void logout(View view) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage("Are you sure you want to logout?")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int id) {
-                        leaveSession();
-                        pr.logoutUser();
-                        finish();
-                        dialog.dismiss();
-                    }
+                .setPositiveButton("Yes", (dialog, id) -> {
+                    leaveSession();
+                    pr.logoutUser();
+                    finish();
+                    dialog.dismiss();
                 })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                    }
-                });
+                .setNegativeButton("Cancel", (dialog, id) -> dialog.dismiss());
         builder.create().show();
     }
 

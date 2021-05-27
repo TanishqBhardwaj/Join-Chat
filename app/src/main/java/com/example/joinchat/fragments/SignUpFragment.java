@@ -45,21 +45,13 @@ public class SignUpFragment extends Fragment {
         email_edit_text = view.findViewById(R.id.email_sign_up_edit_text);
         password_edit_text = view.findViewById(R.id.password_sign_up_edit_text);
         name_edit_text = view.findViewById(R.id.name_edit_text);
-        sign_up_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sign_up();
-            }
-        });
         TextView login_text_view = view.findViewById(R.id.login_text_view);
-        login_text_view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getFragmentManager().
-                        beginTransaction().replace(R.id.fragment_container_login_sign_up,
-                        new LoginFragment()).commit();
-            }
-        });
+
+        sign_up_button.setOnClickListener(v -> sign_up());
+
+        login_text_view.setOnClickListener(v -> getFragmentManager().
+                beginTransaction().replace(R.id.fragment_container_login_sign_up,
+                new LoginFragment()).commit());
 
         return view;
     }

@@ -5,6 +5,7 @@ import android.util.Log;
 import org.webrtc.AudioTrack;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaStream;
+import org.webrtc.MediaStreamTrack;
 import org.webrtc.PeerConnection;
 import org.webrtc.VideoTrack;
 
@@ -21,6 +22,7 @@ public abstract class Participant {
     protected AudioTrack audioTrack;
     protected VideoTrack videoTrack;
     protected MediaStream mediaStream;
+    protected MediaStreamTrack mediaStreamTrack;
 
     public Participant(String participantName, Session session) {
         this.participantName = participantName;
@@ -79,6 +81,14 @@ public abstract class Participant {
 
     public void setMediaStream(MediaStream mediaStream) {
         this.mediaStream = mediaStream;
+    }
+
+    public MediaStreamTrack getMediaStreamTrack() {
+        return mediaStreamTrack;
+    }
+
+    public void setMediaStreamTrack(MediaStreamTrack mediaStreamTrack) {
+        this.mediaStreamTrack = mediaStreamTrack;
     }
 
     public void dispose() {

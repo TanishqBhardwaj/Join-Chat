@@ -3,6 +3,7 @@ package com.example.joinchat.openvidu;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.example.joinchat.activities.MainActivity;
 import com.example.joinchat.observers.CustomPeerConnectionObserver;
@@ -38,6 +39,7 @@ public class Session {
     private PeerConnectionFactory peerConnectionFactory;
     private CustomWebSocket websocket;
     private MainActivity activity;
+    public static SessionDescription sessionDescription;
 
     public Session(String id, String token, LinearLayout views_container, MainActivity activity) {
         this.id = id;
@@ -91,6 +93,31 @@ public class Session {
             public void onIceCandidate(IceCandidate iceCandidate) {
                 super.onIceCandidate(iceCandidate);
                 websocket.onIceCandidate(iceCandidate, localParticipant.getConnectionId());
+            }
+
+            @Override
+            public void onIceConnectionChange(PeerConnection.IceConnectionState iceConnectionState) {
+                super.onIceConnectionChange(iceConnectionState);
+                if(iceConnectionState.equals(PeerConnection.IceConnectionState.DISCONNECTED)) {
+//                    Toast.makeText(activity.getApplicationContext(), "Trying to reconnect !", Toast.LENGTH_LONG).show();
+                    Log.e("onIceConnection() ", "RECONNECTING........ "
+                            + getLocalParticipant().getParticipantName());
+
+//                    websocket.reconnectStream(localParticipant.getPeerConnection().getLocalDescription(),
+//                            websocket.getStreamId());
+                    MediaConstraints sdpConstraints = new MediaConstraints();
+                    sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
+                    sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
+                    createLocalOffer(sdpConstraints, 1);
+                }
+                if(iceConnectionState.equals(PeerConnection.IceConnectionState.CLOSED)) {
+                    Log.e("onIceConnection() ", "RECONNECTING........ "
+                            + getLocalParticipant().getParticipantName());
+                    MediaConstraints sdpConstraints = new MediaConstraints();
+                    sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveAudio", "true"));
+                    sdpConstraints.mandatory.add(new MediaConstraints.KeyValuePair("offerToReceiveVideo", "true"));
+                    createLocalOffer(sdpConstraints, 1);
+                }
             }
         });
 
